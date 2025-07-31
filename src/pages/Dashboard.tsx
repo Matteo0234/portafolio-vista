@@ -3,6 +3,7 @@ import { MetricCard } from '@/components/ui/metric-card';
 import { PerformanceChart } from '@/components/charts/PerformanceChart';
 import { AssetAllocationChart } from '@/components/charts/AssetAllocationChart';
 import { PositionsTable } from '@/components/tables/PositionsTable';
+import { AddAssetDialog } from '@/components/forms/AddAssetDialog';
 import { 
   Portfolio, 
   Position, 
@@ -114,6 +115,41 @@ export default function Dashboard() {
     loadData();
   }, []);
 
+  const handleAssetAdded = (newAsset: Partial<Position>) => {
+    const asset: Position = {
+      id: Math.random().toString(36).substr(2, 9),
+      portfolio_id: portfolios[0]?.id || '1',
+      symbol: newAsset.symbol!,
+      name: newAsset.name!,
+      quantity: newAsset.quantity!,
+      average_cost: newAsset.average_cost!,
+      current_price: newAsset.current_price!,
+      market_value: newAsset.market_value!,
+      profit_loss: newAsset.profit_loss!,
+      profit_loss_percentage: newAsset.profit_loss_percentage!,
+      asset_type: newAsset.asset_type!,
+      ...(newAsset.sector && { sector: newAsset.sector }),
+    };
+    
+    setPositions(prev => [...prev, asset]);
+  };
+
+  const handleAssetUpdated = (assetId: string, updates: Partial<Position>) => {
+    setPositions(prev => 
+      prev.map(pos => 
+        pos.id === assetId ? { ...pos, ...updates } : pos
+      )
+    );
+  };
+
+  const handleAssetDeleted = (assetId: string) => {
+    setPositions(prev => prev.filter(pos => pos.id !== assetId));
+    toast({
+      title: "Asset eliminato",
+      description: "L'asset è stato rimosso dal portafoglio",
+    });
+  };
+
   const handleRefresh = () => {
     loadData(true);
   };
@@ -216,11 +252,22 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Positions Table */}
-        <PositionsTable 
-          positions={positions}
-          loading={loading}
-        />
+        {/* Portfolio Management */}
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold">Gestione Portafoglio</h2>
+            <AddAssetDialog 
+              portfolioId={portfolios[0]?.id || '1'} 
+              onAssetAdded={handleAssetAdded}
+            />
+          </div>
+          <PositionsTable 
+            positions={positions}
+            loading={loading}
+            onAssetUpdated={handleAssetUpdated}
+            onAssetDeleted={handleAssetDeleted}
+          />
+        </div>
       </div>
     </div>
   );

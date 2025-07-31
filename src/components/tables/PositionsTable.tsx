@@ -9,20 +9,37 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Position } from '@/services/api';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { EditAssetDialog } from '@/components/forms/EditAssetDialog';
+import { TrendingUp, TrendingDown, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PositionsTableProps {
   positions: Position[];
   title?: string;
   loading?: boolean;
+  onAssetUpdated?: (assetId: string, updates: Partial<Position>) => void;
+  onAssetDeleted?: (assetId: string) => void;
 }
 
 export function PositionsTable({ 
   positions, 
   title = 'Posizioni Attuali',
-  loading = false 
+  loading = false,
+  onAssetUpdated,
+  onAssetDeleted 
 }: PositionsTableProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('it-IT', {
@@ -109,6 +126,7 @@ export function PositionsTable({
                 <TableHead className="text-right">Prezzo Corrente</TableHead>
                 <TableHead className="text-right">Valore Mercato</TableHead>
                 <TableHead className="text-right">P&L</TableHead>
+                {(onAssetUpdated || onAssetDeleted) && <TableHead>Azioni</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -167,9 +185,47 @@ export function PositionsTable({
                             {formatPercentage(position.profit_loss_percentage)}
                           </div>
                         </div>
+                    </div>
+                  </TableCell>
+                  {(onAssetUpdated || onAssetDeleted) && (
+                    <TableCell>
+                      <div className="flex space-x-1">
+                        {onAssetUpdated && (
+                          <EditAssetDialog 
+                            asset={position} 
+                            onAssetUpdated={onAssetUpdated}
+                          />
+                        )}
+                        {onAssetDeleted && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Eliminare {position.symbol}?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Questa azione non può essere annullata. L'asset verrà rimosso permanentemente dal portafoglio.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Annulla</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => onAssetDeleted(position.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Elimina
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </div>
                     </TableCell>
-                  </TableRow>
+                  )}
+                </TableRow>
                 ))
               )}
             </TableBody>
